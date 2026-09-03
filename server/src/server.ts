@@ -17,3 +17,5 @@ app.get('/', (req, res) => res.send('Server is live!'));
 app.use("/api/inngest", serve({ client: inngest, functions }));
 
 app.listen(PORT, () => console.log(`Server running on port localhost:${PORT}`));
+
+export default app;
