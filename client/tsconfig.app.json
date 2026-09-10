@@ -17,6 +17,11 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Modern Path Mapping (Relative to tsconfig, NO baseUrl) */
+    "paths": {
+      "@projexo/types": ["../packages/types/src/index.ts"]
+    },
+
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,

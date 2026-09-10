@@ -1,8 +1,10 @@
 import { FolderOpen, CheckCircle, Users, AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAppSelector } from "../app/hooks";
+import { useUser } from "@clerk/react";
 
 export default function StatsGrid() {
+    const { user } = useUser();
     const currentWorkspace = useAppSelector(
         (state) => state.workspace?.currentWorkspace || null
     );
@@ -51,42 +53,53 @@ export default function StatsGrid() {
     ];
 
     useEffect(() => {
-        if (currentWorkspace) {
+        if (currentWorkspace && user) {
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+
+            const totalProjects = currentWorkspace.projects.length;
+            const activeProjects = currentWorkspace.projects.filter(
+                (p) => p.status !== "CANCELLED" && p.status !== "COMPLETED"
+            ).length;
+
+            const completedProjects = currentWorkspace.projects.filter(
+                (p) => p.status === "COMPLETED"
+            ).length;
+
+            const myTasks = currentWorkspace.projects.reduce(
+                (acc, project) =>
+                    acc +
+                    project.tasks.filter((t) => t.assigneeId === user.id).length,
+                0
+            );
+
+            const overdueIssues = currentWorkspace.projects.reduce(
+                (acc, project) =>
+                    acc +
+                    project.tasks.filter((t) => {
+                        if (!t.due_date || t.status === "DONE") return false;
+                        const dueDate = new Date(t.due_date);
+                        dueDate.setHours(0, 0, 0, 0);
+                        return dueDate.getTime() < todayStart.getTime();
+                    }).length,
+                0
+            );
+
             setStats({
-                totalProjects: currentWorkspace.projects.length,
-                activeProjects: currentWorkspace.projects.filter(
-                    (p) => p.status !== "CANCELLED" && p.status !== "COMPLETED"
-                ).length,
-                completedProjects: currentWorkspace.projects
-                    .filter((p) => p.status === "COMPLETED")
-                    .reduce((acc, project) => acc + project.tasks.length, 0),
-                myTasks: currentWorkspace.projects.reduce(
-                    (acc, project) =>
-                        acc +
-                        project.tasks.filter(
-                            (t) => t.assignee?.email === currentWorkspace.owner?.email
-                        ).length,
-                    0
-                ),
-                overdueIssues: currentWorkspace.projects.reduce(
-                    (acc, project) =>
-                        acc + project.tasks.filter((t) => t.due_date && new Date(t.due_date) < new Date() && t.status !== "DONE").length,
-                    0
-                ),
-                // overdueIssues: currentWorkspace.projects.reduce(
-                //     (acc, project) =>
-                //         acc + project.tasks.filter((t) => t.due_date < new Date()).length,
-                //     0
-                // ), this is the cause of 0 appearing.
+                totalProjects,
+                activeProjects,
+                completedProjects,
+                myTasks,
+                overdueIssues,
             });
         }
-    }, [currentWorkspace]);
+    }, [currentWorkspace, user]);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 my-9">
             {statCards.map(
                 ({ icon: Icon, title, value, subtitle, bgColor, textColor }, i) => (
-                    <div key={i} className="bg-white dark:bg-zinc-950 dark:bg-linear-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition duration-200 rounded-md" >
+                    <div key={i} className="bg-white dark:bg-zinc-950 dark:bg-linear-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition duration-200 rounded-md">
                         <div className="p-6 py-4">
                             <div className="flex items-start justify-between">
                                 <div>
@@ -102,7 +115,7 @@ export default function StatsGrid() {
                                         </p>
                                     )}
                                 </div>
-                                <div className={`p-3 rounded-xl ${bgColor} bg-opacity-20`}>
+                                <div className={`p-3 rounded-xl ${bgColor}`}>
                                     <Icon size={20} className={textColor} />
                                 </div>
                             </div>

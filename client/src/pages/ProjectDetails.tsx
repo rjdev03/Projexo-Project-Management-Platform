@@ -10,7 +10,7 @@ import {
     ZapIcon 
 } from "lucide-react";
 import { useAppSelector } from "../app/hooks";
-import type { Project, Task, ProjectStatus } from "../types";
+import type { Project, Task, ProjectStatus } from "@projexo/types";
 import ProjectAnalytics from "../components/ProjectAnalytics";
 import ProjectSettings from "../components/ProjectSettings";
 import CreateTaskDialog from "../components/CreateTaskDialog";

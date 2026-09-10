@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { CheckSquareIcon, ChevronDownIcon, ChevronRightIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAppSelector } from '../app/hooks';
-import type { Task, TaskStatus } from '../types';
+import type { Task, TaskStatus } from '@projexo/types';
+import { useUser } from '@clerk/react';
 
 function MyTasksSidebar() {
-    const user = { id: 'user_1' };
+    const { user } = useUser();
 
     const { currentWorkspace } = useAppSelector((state) => state.workspace);
     const [showMyTasks, setShowMyTasks] = useState<boolean>(false);

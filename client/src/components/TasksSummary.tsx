@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, Clock, AlertTriangle, User } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useAppSelector } from "../app/hooks";
-import type { Task } from "../types";
+import type { Task } from "@projexo/types";
+import { useUser } from "@clerk/react";
 
 export default function TasksSummary() {
     const { currentWorkspace } = useAppSelector((state) => state.workspace);
-    const user = { id: 'user_1' }; // Used for demo fetching logic
+    const { user } = useUser();
     const [tasks, setTasks] = useState<Task[]>([]);
 
     useEffect(() => {
@@ -14,9 +16,17 @@ export default function TasksSummary() {
         }
     }, [currentWorkspace]);
 
-    const myTasks = tasks.filter(i => i.assigneeId === user.id);
-    const overdueTasks = tasks.filter(t => t.due_date && new Date(t.due_date) < new Date() && t.status !== 'DONE');
-    const inProgressIssues = tasks.filter(i => i.status === 'IN_PROGRESS');
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const myTasks = tasks.filter((i) => i.assigneeId === user?.id);
+    const overdueTasks = tasks.filter((t) => {
+        if (!t.due_date || t.status === "DONE") return false;
+        const due = new Date(t.due_date);
+        due.setHours(0, 0, 0, 0);
+        return due.getTime() < todayStart.getTime();
+    });
+    const inProgressIssues = tasks.filter((i) => i.status === "IN_PROGRESS");
 
     const summaryCards = [
         {
@@ -53,7 +63,7 @@ export default function TasksSummary() {
                             </div>
                             <div className="flex items-center justify-between flex-1">
                                 <h3 className="text-sm font-medium text-gray-800 dark:text-white">{card.title}</h3>
-                                <span className={`inline-block mt-1 px-2 py-1 rounded text-xs font-semibold ${card.color}`}>
+                                <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${card.color}`}>
                                     {card.count}
                                 </span>
                             </div>
@@ -67,19 +77,26 @@ export default function TasksSummary() {
                         ) : (
                             <div className="space-y-3">
                                 {card.items.map((issue) => (
-                                    <div key={issue.id} className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
+                                    <Link
+                                        key={issue.id}
+                                        to={`/taskDetails?projectId=${issue.projectId}&taskId=${issue.id}`}
+                                        className="block p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                                    >
                                         <h4 className="text-sm font-medium text-gray-800 dark:text-white truncate">
                                             {issue.title}
                                         </h4>
                                         <p className="text-xs text-gray-600 dark:text-zinc-400 capitalize mt-1">
-                                            {issue.type} • {issue.priority} priority
+                                            {issue.type.toLowerCase()} • {issue.priority.toLowerCase()} priority
                                         </p>
-                                    </div>
+                                    </Link>
                                 ))}
                                 {card.count > 3 && (
-                                    <button className="flex items-center justify-center w-full text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-white mt-2">
-                                        View {card.count - 3} more <ArrowRight className="w-3 h-3 ml-2" />
-                                    </button>
+                                    <Link
+                                        to="/projects"
+                                        className="flex items-center justify-center w-full text-xs text-blue-600 dark:text-blue-400 hover:underline mt-2 pt-1"
+                                    >
+                                        View all {card.count} tasks <ArrowRight className="w-3 h-3 ml-1" />
+                                    </Link>
                                 )}
                             </div>
                         )}

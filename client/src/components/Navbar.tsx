@@ -2,7 +2,6 @@ import React from 'react';
 import { SearchIcon, PanelLeft, MoonIcon, SunIcon } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../app/hooks';
 import { toggleTheme } from '../features/themeSlice';
-import { assets } from '../assets/assets';
 import { UserButton } from '@clerk/react';
 
 interface NavbarProps {

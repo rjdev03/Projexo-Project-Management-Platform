@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { CheckCircle, Clock, AlertTriangle, Users, ArrowRightIcon } from "lucide-react";
-import type { Project, Task, Priority, TaskStatus, TaskType } from "../types";
+import type { Project, Task, Priority, TaskStatus, TaskType } from "@projexo/types";
 
 interface ProjectAnalyticsProps {
     project: Project;
@@ -11,14 +11,15 @@ interface ProjectAnalyticsProps {
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
 const PRIORITY_COLORS: Record<Priority, string> = {
-    LOW: "text-red-600 bg-red-200 dark:text-red-500 dark:bg-red-600",
-    MEDIUM: "text-blue-600 bg-blue-200 dark:text-blue-500 dark:bg-blue-600",
-    HIGH: "text-emerald-600 bg-emerald-200 dark:text-emerald-500 dark:bg-emerald-600",
+    LOW: "text-zinc-600 bg-zinc-200 dark:text-zinc-400 dark:bg-zinc-700",
+    MEDIUM: "text-blue-600 bg-blue-200 dark:text-blue-400 dark:bg-blue-900/40",
+    HIGH: "text-red-600 bg-red-200 dark:text-red-400 dark:bg-red-900/40",
 };
 
 export default function ProjectAnalytics({ project, tasks }: ProjectAnalyticsProps) {
     const { stats, statusData, typeData, priorityData } = useMemo(() => {
-        const now = new Date();
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
         const total = tasks.length;
 
         const stats = {
@@ -37,7 +38,14 @@ export default function ProjectAnalytics({ project, tasks }: ProjectAnalyticsPro
             if (t.status === "DONE") stats.completed++;
             if (t.status === "IN_PROGRESS") stats.inProgress++;
             if (t.status === "TODO") stats.todo++;
-            if (new Date(t.due_date) < now && t.status !== "DONE") stats.overdue++;
+
+            if (t.due_date && t.status !== "DONE") {
+                const due = new Date(t.due_date);
+                due.setHours(0, 0, 0, 0);
+                if (due.getTime() < todayStart.getTime()) {
+                    stats.overdue++;
+                }
+            }
 
             if (t.status in statusMap) statusMap[t.status]++;
             if (t.type in typeMap) typeMap[t.type]++;
@@ -96,7 +104,7 @@ export default function ProjectAnalytics({ project, tasks }: ProjectAnalyticsPro
                 {metrics.map((m, i) => (
                     <div
                         key={i}
-                        className="not-dark:bg-white dark:bg-linear-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6"
+                        className="bg-white dark:bg-linear-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6"
                     >
                         <div className="flex items-center justify-between">
                             <div>
@@ -112,24 +120,23 @@ export default function ProjectAnalytics({ project, tasks }: ProjectAnalyticsPro
             {/* Charts */}
             <div className="grid lg:grid-cols-2 gap-6">
                 {/* Tasks by Status */}
-                <div className="not-dark:bg-white dark:bg-linear-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6">
+                <div className="bg-white dark:bg-linear-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6">
                     <h2 className="text-zinc-900 dark:text-white mb-4 font-medium">Tasks by Status</h2>
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={statusData}>
                             <XAxis
                                 dataKey="name"
-                                tick={{ fill: "#52525b", fontSize: 12 }}
+                                tick={{ fill: "#71717a", fontSize: 12 }}
                                 axisLine={{ stroke: "#d4d4d8" }}
-                                {...({ dark: { stroke: "#27272a" } } as Record<string, unknown>)}
                             />
-                            <YAxis tick={{ fill: "#52525b", fontSize: 12 }} axisLine={{ stroke: "#d4d4d8" }} />
+                            <YAxis tick={{ fill: "#71717a", fontSize: 12 }} axisLine={{ stroke: "#d4d4d8" }} />
                             <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
 
                 {/* Tasks by Type */}
-                <div className="not-dark:bg-white dark:bg-linear-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6">
+                <div className="bg-white dark:bg-linear-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6">
                     <h2 className="text-zinc-900 dark:text-white mb-4 font-medium">Tasks by Type</h2>
                     <ResponsiveContainer width="100%" height={300}>
                         <PieChart>
@@ -152,7 +159,7 @@ export default function ProjectAnalytics({ project, tasks }: ProjectAnalyticsPro
             </div>
 
             {/* Priority Breakdown */}
-            <div className="not-dark:bg-white dark:bg-linear-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6">
+            <div className="bg-white dark:bg-linear-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6">
                 <h2 className="text-zinc-900 dark:text-white mb-4 font-medium">Tasks by Priority</h2>
                 <div className="space-y-4">
                     {priorityData.map((p) => (
@@ -160,7 +167,7 @@ export default function ProjectAnalytics({ project, tasks }: ProjectAnalyticsPro
                             <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-2">
                                     <ArrowRightIcon className={`size-3.5 ${PRIORITY_COLORS[p.name]} bg-transparent dark:bg-transparent`} />
-                                    <span className="text-zinc-900 dark:text-zinc-200 capitalize">{p.name.toLowerCase()}</span>
+                                    <span className="text-zinc-900 dark:text-zinc-200 capitalize font-medium">{p.name.toLowerCase()}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-zinc-600 dark:text-zinc-400 text-sm">{p.value} tasks</span>
@@ -169,7 +176,7 @@ export default function ProjectAnalytics({ project, tasks }: ProjectAnalyticsPro
                                     </span>
                                 </div>
                             </div>
-                            <div className="w-full bg-zinc-300 dark:bg-zinc-800 rounded-full h-1.5">
+                            <div className="w-full bg-zinc-200 dark:bg-zinc-800 rounded-full h-1.5">
                                 <div
                                     className={`h-1.5 rounded-full ${PRIORITY_COLORS[p.name]}`}
                                     style={{ width: `${p.percentage}%` }}

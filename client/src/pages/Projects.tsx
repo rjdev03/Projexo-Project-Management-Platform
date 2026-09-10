@@ -3,7 +3,7 @@ import { Plus, Search, FolderOpen } from "lucide-react";
 import { useAppSelector } from "../app/hooks";
 import ProjectCard from "../components/ProjectCard";
 import CreateProjectDialog from "../components/CreateProjectDialog";
-import type { Project, ProjectStatus, Priority } from "../types";
+import type { Project, ProjectStatus, Priority } from "@projexo/types";
 
 export default function Projects() {
     const projects = useAppSelector(

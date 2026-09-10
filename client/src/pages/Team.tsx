@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { UsersIcon, Search, UserPlus, Shield, Activity } from "lucide-react";
 import InviteMemberDialog from "../components/InviteMemberDialog";
 import { useAppSelector } from "../app/hooks";
-import type { Project, Task, WorkspaceMember } from "../types";
+import type { Project, Task, WorkspaceMember } from "@projexo/types";
 
 const Team = () => {
     const [tasks, setTasks] = useState<Task[]>([]);

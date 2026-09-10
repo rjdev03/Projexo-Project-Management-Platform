@@ -4,7 +4,7 @@ import { ArrowRight, Calendar, UsersIcon, FolderOpen } from "lucide-react";
 import { format } from "date-fns";
 import { useAppSelector } from "../app/hooks";
 import CreateProjectDialog from "./CreateProjectDialog";
-import type { Project } from "../types";
+import type { Project } from "@projexo/types";
 
 const ProjectOverview: React.FC = () => {
     const statusColors: Record<string, string> = {

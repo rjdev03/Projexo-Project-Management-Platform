@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { GitCommit, MessageSquare, Clock, Bug, Zap, Square, type LucideIcon } from "lucide-react";
 import { format } from "date-fns";
 import { useAppSelector } from "../app/hooks";
-import type { Task, TaskType, TaskStatus } from "../types";
+import type { Task, TaskType, TaskStatus } from "@projexo/types";
 
 const typeIcons: Record<TaskType, { icon: LucideIcon; color: string }> = {
     BUG: { icon: Bug, color: "text-red-500 dark:text-red-400" },

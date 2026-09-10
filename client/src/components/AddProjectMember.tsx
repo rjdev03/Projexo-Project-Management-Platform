@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { Mail, UserPlus } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
-import { useAppSelector } from "../app/hooks";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
+import { useAuth } from "@clerk/react";
+import api from "../configs/api";
+import toast from "react-hot-toast";
+import { fetchWorkspaces } from "../features/workspaceSlice";
 
 interface AddProjectMemberProps {
     isDialogOpen: boolean;
@@ -11,6 +15,8 @@ interface AddProjectMemberProps {
 const AddProjectMember: React.FC<AddProjectMemberProps> = ({ isDialogOpen, setIsDialogOpen }) => {
     const [searchParams] = useSearchParams();
     const id = searchParams.get('id');
+    const { getToken } = useAuth();
+    const dispatch = useAppDispatch();
 
     const currentWorkspace = useAppSelector((state) => state.workspace?.currentWorkspace || null);
 
@@ -20,11 +26,21 @@ const AddProjectMember: React.FC<AddProjectMemberProps> = ({ isDialogOpen, setIs
     const [email, setEmail] = useState<string>('');
     const [isAdding, setIsAdding] = useState<boolean>(false);
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.SubmitEvent) => {
         e.preventDefault();
         setIsAdding(true);
-        // Form submission logic here
-        setIsAdding(false);
+        try {
+            await api.post(`/api/projects/${project?.id}/addMember`, {email},
+                {headers: {Authorization: `Bearer ${await getToken()}`}});
+            toast.success("Added to project successfully");
+            setIsDialogOpen(false);
+            dispatch(fetchWorkspaces({getToken}));
+        } catch (error) {
+            const err = error as { response?: { data?: { message?: string } }; message?: string };
+            toast.error(err?.response?.data?.message || err?.message || "An error occurred");
+        } finally {
+            setIsAdding(false);
+        }
     };
 
     const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

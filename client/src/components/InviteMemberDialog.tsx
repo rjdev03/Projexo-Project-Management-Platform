@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Mail, UserPlus } from "lucide-react";
 import { useAppSelector } from "../app/hooks";
+import { useOrganization } from "@clerk/react";
+import toast from "react-hot-toast";
 
 interface InviteMemberDialogProps {
     isDialogOpen: boolean;
@@ -13,6 +15,7 @@ interface FormData {
 }
 
 const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({ isDialogOpen, setIsDialogOpen }) => {
+    const { organization } = useOrganization();
     const currentWorkspace = useAppSelector((state) => state.workspace?.currentWorkspace || null);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [formData, setFormData] = useState<FormData>({
@@ -20,9 +23,21 @@ const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({ isDialogOpen, s
         role: "org:member",
     });
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.SubmitEvent) => {
         e.preventDefault();
-        // Additional submit logic here...
+        setIsSubmitting(true);
+        try {
+            await organization?.inviteMember({ emailAddress: formData.email, role: formData.role });
+            toast.success("Invitation sent successfully");
+            setFormData({ email: "", role: "org:member" });
+            setIsDialogOpen(false);
+        } catch (error: unknown) {
+            console.error(error);
+            const err = error as { response?: { data?: { message?: string } }; message?: string };
+            toast.error(err?.response?.data?.message || err?.message || "An error occurred");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (!isDialogOpen) return null;
@@ -56,7 +71,7 @@ const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({ isDialogOpen, s
                                 value={formData.email} 
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, email: e.target.value })} 
                                 placeholder="Enter email address" 
-                                className="pl-10 mt-1 w-full rounded border border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-200 text-sm placeholder-zinc-400 dark:placeholder-zinc-500 py-2 focus:outline-none focus:border-blue-500" 
+                                className="pl-10 mt-1 w-full rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-200 text-sm placeholder-zinc-400 dark:placeholder-zinc-500 py-2 focus:outline-none focus:border-blue-500" 
                                 required 
                             />
                         </div>
@@ -68,7 +83,7 @@ const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({ isDialogOpen, s
                         <select 
                             value={formData.role} 
                             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({ ...formData, role: e.target.value })} 
-                            className="w-full rounded border border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-200 py-2 px-3 mt-1 focus:outline-none focus:border-blue-500 text-sm"
+                            className="w-full rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-200 py-2 px-3 mt-1 focus:outline-none focus:border-blue-500 text-sm"
                         >
                             <option value="org:member">Member</option>
                             <option value="org:admin">Admin</option>
@@ -79,7 +94,10 @@ const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({ isDialogOpen, s
                     <div className="flex justify-end gap-3 pt-2">
                         <button 
                             type="button" 
-                            onClick={() => setIsDialogOpen(false)} 
+                            onClick={() => {
+                                setFormData({ email: "", role: "org:member" });
+                                setIsDialogOpen(false);
+                            }} 
                             className="px-5 py-2 rounded text-sm border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
                         >
                             Cancel
@@ -87,7 +105,7 @@ const InviteMemberDialog: React.FC<InviteMemberDialogProps> = ({ isDialogOpen, s
                         <button 
                             type="submit" 
                             disabled={isSubmitting || !currentWorkspace} 
-                            className="px-5 py-2 rounded text-sm bg-linear-to-br from-blue-500 to-blue-600 text-white disabled:opacity-50 hover:opacity-90 transition"
+                            className="px-5 py-2 rounded text-sm bg-linear-to-br from-blue-500 to-blue-600 text-white disabled:opacity-50 hover:opacity-90 transition font-medium"
                         >
                             {isSubmitting ? "Sending..." : "Send Invitation"}
                         </button>

@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import { useAppSelector } from "../app/hooks";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
+import { useAuth } from "@clerk/react";
+import api from "../configs/api";
+import toast from "react-hot-toast";
+import { addTask } from "../features/workspaceSlice";
 
 interface CreateTaskDialogProps {
     showCreateTask: boolean;
@@ -20,6 +24,8 @@ interface TaskFormData {
 }
 
 export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, projectId }: CreateTaskDialogProps) {
+    const { getToken } = useAuth();
+    const dispatch = useAppDispatch();
     const currentWorkspace = useAppSelector((state) => state.workspace?.currentWorkspace || null);
     const project = currentWorkspace?.projects.find((p) => p.id === projectId);
     const teamMembers = project?.members || [];
@@ -35,11 +41,30 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
         due_date: "",
     });
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.SubmitEvent) => {
         e.preventDefault();
-        // setIsSubmitting(true);
-        // // Form submission logic here
-        // setIsSubmitting(false);
+        setIsSubmitting(true);
+        try {
+            const { data } = await api.post('/api/tasks', {...formData, workspaceId: currentWorkspace?.id, projectId},
+                {headers: { Authorization: `Bearer ${await getToken()}`}});
+            setShowCreateTask(false);
+            setFormData({
+                title: "",
+                description: "",
+                type: "TASK",
+                status: "TODO",
+                priority: "MEDIUM",
+                assigneeId: "",
+                due_date: "",
+            });
+            toast.success(data.message);
+            dispatch(addTask(data.task))
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: {message?: string} }; message?: string};
+            toast.error(err?.response?.data?.message || err?.message || "An error occurred");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     // const handleInputChange = (
@@ -154,7 +179,7 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                                 name="due_date"
                                 value={formData.due_date}
                                 onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                                min={new Date().toISOString().split('T')[0]}
+                                min={format(new Date(), "yyyy-MM-dd")}
                                 className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1"
                             />
                         </div>

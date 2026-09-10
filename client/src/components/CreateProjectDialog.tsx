@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { XIcon } from "lucide-react";
-import { useAppSelector } from "../app/hooks";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
+import toast from "react-hot-toast";
+import api from "../configs/api";
+import { useAuth } from "@clerk/react";
+import { addProject } from "../features/workspaceSlice";
 
 interface CreateProjectDialogProps {
     isDialogOpen: boolean;
@@ -19,49 +23,48 @@ interface ProjectFormData {
     progress: number;
 }
 
+const initialFormData: ProjectFormData = {
+    name: "",
+    description: "",
+    status: "PLANNING",
+    priority: "MEDIUM",
+    start_date: "",
+    end_date: "",
+    team_members: [],
+    team_lead: "",
+    progress: 0,
+};
+
 const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ isDialogOpen, setIsDialogOpen }) => {
+    const { getToken } = useAuth();
+    const dispatch = useAppDispatch();
     const { currentWorkspace } = useAppSelector((state) => state.workspace);
 
-    const [formData, setFormData] = useState<ProjectFormData>({
-        name: "",
-        description: "",
-        status: "PLANNING",
-        priority: "MEDIUM",
-        start_date: "",
-        end_date: "",
-        team_members: [],
-        team_lead: "",
-        progress: 0,
-    });
-
+    const [formData, setFormData] = useState<ProjectFormData>(initialFormData);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.SubmitEvent) => {
         e.preventDefault();
+        try {
+            if (!formData.team_lead) {
+                return toast.error("Please select a team lead");
+            }
+            setIsSubmitting(true);
+            const { data } = await api.post("/api/projects", 
+                { workspaceId: currentWorkspace?.id, ...formData }, 
+                { headers: { Authorization: `Bearer ${await getToken()}` } });
+            
+            dispatch(addProject(data.project));
+            toast.success(data.message || "Project created successfully");
+            setFormData(initialFormData);
+            setIsDialogOpen(false);
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { message?: string } }; message?: string };
+            toast.error(err?.response?.data?.message || err?.message || "An error occurred");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
-
-    // const handleInputChange = (
-    //     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-    // ) => {
-    //     const { name, value } = e.target;
-    //     setFormData((prev) => ({ ...prev, [name]: value }));
-    // };
-
-    // const handleTeamLeadChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    //     const value = e.target.value;
-    //     setFormData((prev) => ({
-    //         ...prev,
-    //         team_lead: value,
-    //         team_members: value ? Array.from(new Set([...prev.team_members, value])) : prev.team_members,
-    //     }));
-    // };
-
-    // const handleAddMemberSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    //     const value = e.target.value;
-    //     if (value && !formData.team_members.includes(value)) {
-    //         setFormData((prev) => ({ ...prev, team_members: [...prev.team_members, value] }));
-    //     }
-    // };
 
     const removeTeamMember = (email: string) => {
         setFormData((prev) => ({ ...prev, team_members: prev.team_members.filter((m) => m !== email) }));
@@ -73,8 +76,12 @@ const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ isDialogOpen,
         <div className="fixed inset-0 bg-black/20 dark:bg-black/60 backdrop-blur flex items-center justify-center text-left z-50">
             <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 w-full max-w-lg text-zinc-900 dark:text-zinc-200 relative">
                 <button
-                    className="absolute top-3 right-3 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
-                    onClick={() => setIsDialogOpen(false)}
+                    type="button"
+                    className="absolute top-3 right-3 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer"
+                    onClick={() => {
+                        setFormData(initialFormData);
+                        setIsDialogOpen(false);
+                    }}
                 >
                     <XIcon className="size-5" />
                 </button>
@@ -95,7 +102,7 @@ const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ isDialogOpen,
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             placeholder="Enter project name"
-                            className="w-full px-3 py-2 rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm"
+                            className="w-full px-3 py-2 rounded bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm focus:outline-none focus:border-blue-500"
                             required
                         />
                     </div>
@@ -107,7 +114,7 @@ const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ isDialogOpen,
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             placeholder="Describe your project"
-                            className="w-full px-3 py-2 rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm h-20"
+                            className="w-full px-3 py-2 rounded bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm h-20 focus:outline-none focus:border-blue-500"
                         />
                     </div>
 
@@ -118,7 +125,7 @@ const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ isDialogOpen,
                                 name="status"
                                 value={formData.status}
                                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                className="w-full px-3 py-2 rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm"
+                                className="w-full px-3 py-2 rounded bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm"
                             >
                                 <option value="PLANNING">Planning</option>
                                 <option value="ACTIVE">Active</option>
@@ -134,7 +141,7 @@ const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ isDialogOpen,
                                 name="priority"
                                 value={formData.priority}
                                 onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                                className="w-full px-3 py-2 rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm"
+                                className="w-full px-3 py-2 rounded bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm"
                             >
                                 <option value="LOW">Low</option>
                                 <option value="MEDIUM">Medium</option>
@@ -151,7 +158,7 @@ const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ isDialogOpen,
                                 name="start_date"
                                 value={formData.start_date}
                                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                                className="w-full px-3 py-2 rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm"
+                                className="w-full px-3 py-2 rounded bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm"
                             />
                         </div>
                         <div>
@@ -161,8 +168,8 @@ const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ isDialogOpen,
                                 name="end_date"
                                 value={formData.end_date}
                                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                                min={formData.start_date ? new Date(formData.start_date).toISOString().split('T')[0] : undefined}
-                                className="w-full px-3 py-2 rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm"
+                                min={formData.start_date || undefined}
+                                className="w-full px-3 py-2 rounded bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm"
                             />
                         </div>
                     </div>
@@ -172,10 +179,15 @@ const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ isDialogOpen,
                         <select
                             name="team_lead"
                             value={formData.team_lead}
-                            onChange={(e) => setFormData({ ...formData, team_lead: e.target.value, team_members: e.target.value ? [...new Set([...formData.team_members, e.target.value])] : formData.team_members, })}
-                            className="w-full px-3 py-2 rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm"
+                            onChange={(e) => setFormData({ 
+                                ...formData, 
+                                team_lead: e.target.value, 
+                                team_members: e.target.value ? [...new Set([...formData.team_members, e.target.value])] : formData.team_members 
+                            })}
+                            className="w-full px-3 py-2 rounded bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm"
+                            required
                         >
-                            <option value="">No lead</option>
+                            <option value="">Select a team lead</option>
                             {currentWorkspace?.members?.map((member) => (
                                 <option key={member.user.email} value={member.user.email}>
                                     {member.user.email}
@@ -192,7 +204,7 @@ const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ isDialogOpen,
                                     setFormData((prev) => ({ ...prev, team_members: [...prev.team_members, e.target.value] }));
                                 }
                             }}
-                            className="w-full px-3 py-2 rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm"
+                            className="w-full px-3 py-2 rounded bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 mt-1 text-zinc-900 dark:text-zinc-200 text-sm"
                             value=""
                         >
                             <option value="">Add team members</option>
@@ -208,9 +220,9 @@ const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ isDialogOpen,
                         {formData.team_members.length > 0 && (
                             <div className="flex flex-wrap gap-2 mt-2">
                                 {formData.team_members.map((email) => (
-                                    <div key={email} className="flex items-center gap-1 bg-blue-200/50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 px-2 py-1 rounded-md text-sm">
+                                    <div key={email} className="flex items-center gap-1 bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-md text-xs font-medium">
                                         {email}
-                                        <button type="button" onClick={() => removeTeamMember(email)} className="ml-1 hover:bg-blue-300/30 dark:hover:bg-blue-500/30 rounded">
+                                        <button type="button" onClick={() => removeTeamMember(email)} className="ml-1 hover:bg-blue-200 dark:hover:bg-blue-500/30 rounded p-0.5">
                                             <XIcon className="w-3 h-3" />
                                         </button>
                                     </div>
@@ -220,10 +232,21 @@ const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({ isDialogOpen,
                     </div>
 
                     <div className="flex justify-end gap-3 pt-2 text-sm">
-                        <button type="button" onClick={() => setIsDialogOpen(false)} className="px-4 py-2 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-800">
+                        <button 
+                            type="button" 
+                            onClick={() => {
+                                setFormData(initialFormData);
+                                setIsDialogOpen(false);
+                            }} 
+                            className="px-4 py-2 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+                        >
                             Cancel
                         </button>
-                        <button type="submit" disabled={isSubmitting || !currentWorkspace} className="px-4 py-2 rounded bg-linear-to-br from-blue-500 to-blue-600 text-white dark:text-zinc-200">
+                        <button 
+                            type="submit" 
+                            disabled={isSubmitting || !currentWorkspace} 
+                            className="px-4 py-2 rounded bg-linear-to-br from-blue-500 to-blue-600 hover:opacity-90 disabled:opacity-50 text-white font-medium transition"
+                        >
                             {isSubmitting ? "Creating..." : "Create Project"}
                         </button>
                     </div>
