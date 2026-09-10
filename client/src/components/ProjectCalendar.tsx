@@ -61,9 +61,9 @@ export default function ProjectCalendar({ tasks }: ProjectCalendarProps) {
         <div className="grid lg:grid-cols-3 gap-6">
             {/* Calendar View */}
             <div className="lg:col-span-2">
-                <div className="bg-white dark:bg-linear-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-4">
+                <div className="not-dark:bg-white dark:bg-linear-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-zinc-900 dark:text-white text-md flex gap-2 items-center font-medium">
+                        <h2 className="text-zinc-900 dark:text-white text-md flex gap-2 items-center max-sm:hidden">
                             <CalendarIcon className="size-5" /> Task Calendar
                         </h2>
                         <div className="flex gap-2 items-center">
@@ -74,7 +74,7 @@ export default function ProjectCalendar({ tasks }: ProjectCalendarProps) {
                             >
                                 <ChevronLeft className="size-5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white" />
                             </button>
-                            <span className="text-zinc-900 dark:text-white font-medium min-w-32 text-center">
+                            <span className="text-zinc-900 dark:text-white">
                                 {format(currentMonth, "MMMM yyyy")}
                             </span>
                             <button 
@@ -129,8 +129,8 @@ export default function ProjectCalendar({ tasks }: ProjectCalendarProps) {
 
                 {/* Tasks for Selected Day */}
                 {getTasksForDate(selectedDate).length > 0 && (
-                    <div className="bg-white mt-6 dark:bg-linear-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-4">
-                        <h3 className="text-zinc-900 dark:text-white text-base font-medium mb-3">
+                    <div className="not-dark:bg-white mt-6 dark:bg-linear-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-4">
+                        <h3 className="text-zinc-900 dark:text-white text-lg mb-3">
                             Tasks for {format(selectedDate, "MMM d, yyyy")}
                         </h3>
                         <div className="space-y-3">
@@ -164,7 +164,7 @@ export default function ProjectCalendar({ tasks }: ProjectCalendarProps) {
             {/* Sidebar */}
             <div className="space-y-6">
                 {/* Upcoming Tasks */}
-                <div className="bg-white dark:bg-linear-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-4">
+                <div className="bg-white dark:bg-zinc-950 dark:bg-linear-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-4">
                     <h3 className="text-zinc-900 dark:text-white text-sm font-medium flex items-center gap-2 mb-3">
                         <Clock className="w-4 h-4 text-blue-500" /> Upcoming Tasks ({upcomingTasks.length})
                     </h3>
